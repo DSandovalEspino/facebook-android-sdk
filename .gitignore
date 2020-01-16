@@ -57,3 +57,8 @@ facebook/doc/
 facebook/tests/lint.xml
 facebook/src/androidTest/assets/config.json
 gradle-app.setting
+
+facebook-core/.externalNativeBuild/
+
+# i18n
+values-fb

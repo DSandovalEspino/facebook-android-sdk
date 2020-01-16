@@ -78,6 +78,9 @@ public final class FeatureManager {
             case CrashReport:
             case ErrorReport:
             case AAM:
+            case PrivacyProtection:
+            case SuggestedEvents:
+            case PIIFiltering:
                 return false;
             default: return true;
         }
@@ -110,6 +113,9 @@ public final class FeatureManager {
         CodelessEvents(0x00010100),
         RestrictiveDataFiltering(0x00010200),
         AAM(0x00010300),
+        PrivacyProtection(0x00010400),
+        SuggestedEvents(0x00010401),
+        PIIFiltering(0x00010402),
 
         Instrument(0x00020000),
         CrashReport(0x00020100),
@@ -146,6 +152,9 @@ public final class FeatureManager {
                 case CrashReport: name = "CrashReport"; break;
                 case ErrorReport: name = "ErrorReport"; break;
                 case AAM: name = "AAM"; break;
+                case PrivacyProtection: name = "PrivacyProtection"; break;
+                case SuggestedEvents: name = "SuggestedEvents"; break;
+                case PIIFiltering: name = "PIIFiltering"; break;
 
                 case Login: name = "LoginKit"; break;
 

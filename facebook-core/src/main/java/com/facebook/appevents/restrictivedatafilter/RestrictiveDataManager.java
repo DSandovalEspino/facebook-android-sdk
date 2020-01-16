@@ -24,9 +24,13 @@ import android.support.annotation.Nullable;
 import android.support.annotation.RestrictTo;
 import android.util.Log;
 
+import com.facebook.FacebookSdk;
 import com.facebook.appevents.AppEvent;
+import com.facebook.internal.FetchedAppSettings;
+import com.facebook.internal.FetchedAppSettingsManager;
 import com.facebook.internal.Utility;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -46,16 +50,23 @@ public final class RestrictiveDataManager {
     private static List<RestrictiveParam> restrictiveParams = new ArrayList<>();
     private static Set<String> restrictiveEvents = new HashSet<>();
 
-    public static void enable() {
+    public synchronized static void enable() {
         enabled = true;
+        initialize();
     }
 
-    public static synchronized void updateFromSetting(String eventFilterResponse) {
-        if (!enabled) {
-            return;
-        }
-
+    private static synchronized void initialize() {
         try {
+            FetchedAppSettings settings = FetchedAppSettingsManager.queryAppSettings(
+                    FacebookSdk.getApplicationId(), false);
+            if (settings == null) {
+                return;
+            }
+            String eventFilterResponse = settings.getRestrictiveDataSetting();
+            if (eventFilterResponse == null) {
+                return;
+            }
+
             if (!eventFilterResponse.isEmpty()) {
                 JSONObject jsonObject = new JSONObject(eventFilterResponse);
 
@@ -70,19 +81,27 @@ public final class RestrictiveDataManager {
                         if (json.optBoolean("is_deprecated_event")) {
                             restrictiveEvents.add(key);
                         } else {
-                            JSONObject paramJson = jsonObject.getJSONObject(key).optJSONObject("restrictive_param");
-                            if (paramJson != null) {
-                                restrictiveParams.add(
-                                        new RestrictiveParam(key, Utility.convertJSONObjectToStringMap(paramJson)));
+                            JSONObject restrictiveParamJson = json
+                                    .optJSONObject("restrictive_param");
+                            JSONArray deprecatedParamJsonArray = json
+                                    .optJSONArray("deprecated_param");
+                            RestrictiveParam restrictiveParam = new RestrictiveParam(key,
+                                    new HashMap<String, String>(), new ArrayList<String>());
+                            if (restrictiveParamJson != null) {
+                                restrictiveParam.restrictiveParams = Utility
+                                        .convertJSONObjectToStringMap(restrictiveParamJson);
                             }
+                            if (deprecatedParamJsonArray != null) {
+                                restrictiveParam.deprecatedParams = Utility
+                                        .convertJSONArrayToList(deprecatedParamJsonArray);
+                            }
+                            restrictiveParams.add(restrictiveParam);
                         }
                     }
                 }
             }
-        } catch (JSONException je) {
-            Log.w(TAG, "updateRulesFromSetting failed", je);
         } catch (Exception e) {
-            Log.w(TAG, "updateFromSetting failed", e);
+            /* swallow */
         }
     }
 
@@ -106,13 +125,25 @@ public final class RestrictiveDataManager {
         }
 
         Map<String, String> restrictedParams = new HashMap<>();
-        ArrayList<String> keys = new ArrayList<>(parameters.keySet());
+        List<String> keys = new ArrayList<>(parameters.keySet());
+        List<RestrictiveParam> restrictiveParamsCopy = new ArrayList<>(restrictiveParams);
 
         for (String key : keys) {
             String type = RestrictiveDataManager.getMatchedRuleType(eventName, key);
             if (type != null) {
                 restrictedParams.put(key, type);
                 parameters.remove(key);
+            }
+        }
+
+        for (RestrictiveParam rp : restrictiveParamsCopy) {
+            if (!rp.eventName.equals(eventName)) {
+                continue;
+            }
+            for (String key : keys) {
+                if (rp.deprecatedParams.contains(key)) {
+                    parameters.remove(key);
+                }
             }
         }
 
@@ -125,7 +156,7 @@ public final class RestrictiveDataManager {
 
                 parameters.put("_restrictedParams", restrictedJSON.toString());
             } catch (JSONException e) {
-                Log.w(TAG, "processParameters failed", e);
+                /* swallow */
             }
         }
     }
@@ -144,9 +175,9 @@ public final class RestrictiveDataManager {
                 }
 
                 if (eventName.equals(filter.eventName)) {
-                    for (String param : filter.params.keySet()) {
+                    for (String param : filter.restrictiveParams.keySet()) {
                         if (paramKey.equals(param)) {
-                            return filter.params.get(param);
+                            return filter.restrictiveParams.get(param);
                         }
                     }
                 }
@@ -160,11 +191,14 @@ public final class RestrictiveDataManager {
 
     static class RestrictiveParam {
         String eventName;
-        Map<String, String> params;
+        Map<String, String> restrictiveParams;
+        List<String> deprecatedParams;
 
-        RestrictiveParam(String eventName, Map<String, String> params) {
+        RestrictiveParam(String eventName, Map<String, String> restrictiveParams,
+                         List<String> deprecatedParams) {
             this.eventName = eventName;
-            this.params = params;
+            this.restrictiveParams = restrictiveParams;
+            this.deprecatedParams = deprecatedParams;
         }
     }
 }

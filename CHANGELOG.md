@@ -7,6 +7,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.13.0] - 2019-12-11
+
+### Added
+- Parameter deactivation
+
+## [5.12.1] - 2019-12-08
+
+### Fixed
+- Fixed a corner case
+
+## [5.12.0] - 2019-12-03
+
+### Changed
+- Updated suggested events
+
+## [5.11.2] - 2019-11-21
+
+## [5.11.1] - 2019-11-21
+
+### Fixed
+- Fix java.lang.SecurityException in AccessTokenManager: [issue 627](https://github.com/facebook/facebook-android-sdk/issues/627)
+- Fix Google Api Error because of values-fb: [issue 614](https://github.com/facebook/facebook-android-sdk/issues/614)
+- Minor fixes
+
+## [5.11.0] - 2019-11-14
+
+### Added
+- Launch event suggestions
+
+### Fixed
+- Fix NPE on AccessTokenAppIdPair
+
+## [5.9.0] - 2019-10-28
+
+### Changed
+
+- API call upgrade to v5.0
+
+## [5.8.0] - 2019-10-08
+
+### Added
+
+- Launch automatic advanced matching: https://www.facebook.com/business/help/2445860982357574
+
 ## [5.5.2] - 2019-10-04
 
 ### Fixed
@@ -103,6 +147,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <!-- Links -->
 
 [Unreleased]: https://github.com/facebook/facebook-android-sdk/compare/sdk-version-5.4.0...HEAD
+[5.13.0]: https://github.com/facebook/facebook-android-sdk/compare/sdk-version-5.12.1...sdk-version-5.13.0
+[5.12.1]: https://github.com/facebook/facebook-android-sdk/compare/sdk-version-5.12.0...sdk-version-5.12.1
+[5.12.0]: https://github.com/facebook/facebook-android-sdk/compare/sdk-version-5.11.2...sdk-version-5.12.0
+[5.11.2]: https://github.com/facebook/facebook-android-sdk/compare/sdk-version-5.11.1...sdk-version-5.11.2
+[5.11.1]: https://github.com/facebook/facebook-android-sdk/compare/sdk-version-5.11.0...sdk-version-5.11.1
+[5.11.0]: https://github.com/facebook/facebook-android-sdk/compare/sdk-version-5.9.0...sdk-version-5.11.0
+[5.9.0]: https://github.com/facebook/facebook-android-sdk/compare/sdk-version-5.8.0...sdk-version-5.9.0
+[5.8.0]: https://github.com/facebook/facebook-android-sdk/compare/sdk-version-5.5.2...sdk-version-5.8.0
 [5.5.2]: https://github.com/facebook/facebook-android-sdk/compare/sdk-version-5.5.1...sdk-version-5.5.2
 [5.5.1]: https://github.com/facebook/facebook-android-sdk/compare/sdk-version-5.5.0...sdk-version-5.5.1
 [5.5.0]: https://github.com/facebook/facebook-android-sdk/compare/sdk-version-5.4.0...sdk-version-5.5.0
@@ -114,4 +166,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [5.0.0]: https://github.com/facebook/facebook-android-sdk/compare/sdk-version-4.41.0...sdk-version-5.0.0
 [4.41.0]: https://github.com/facebook/facebook-android-sdk/compare/sdk-version-4.40.0...sdk-version-4.41.0
 [4.40.0]: https://github.com/facebook/facebook-android-sdk/compare/sdk-version-4.39.0...sdk-version-4.40.0
-[4.39.0]: https://github.com/facebook/facebook-android-sdk/compare/sdk-version-4.0.0...sdk-version-4.39.0
+
+
+

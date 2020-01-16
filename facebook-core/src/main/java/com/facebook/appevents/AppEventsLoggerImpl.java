@@ -46,6 +46,7 @@ import com.facebook.internal.AttributionIdentifiers;
 import com.facebook.internal.BundleJSONConverter;
 import com.facebook.internal.FetchedAppGateKeepersManager;
 import com.facebook.internal.FetchedAppSettingsManager;
+import com.facebook.internal.InstallReferrerUtil;
 import com.facebook.internal.Logger;
 import com.facebook.internal.Utility;
 import com.facebook.internal.Validate;
@@ -227,9 +228,10 @@ class AppEventsLoggerImpl {
                 ActivityLifecycleTracker.getCurrentSessionGuid());
     }
 
-    void logEventFromSE(String eventName) {
+    void logEventFromSE(String eventName, String buttonText) {
         Bundle parameters = new Bundle();
         parameters.putString("_is_suggested_event", "1");
+        parameters.putString("_button_text", buttonText);
         logEvent(eventName, parameters);
     }
 
@@ -434,6 +436,14 @@ class AppEventsLoggerImpl {
 
     @Nullable
     static String getInstallReferrer() {
+        InstallReferrerUtil.tryUpdateReferrerInfo(new InstallReferrerUtil.Callback() {
+            //will make async connection to try retrieve data. First time we might return null instead of actual result.
+            //Should not be a problem as subsequent calls will have the data if it exists.
+            @Override
+            public void onReceiveReferrerUrl(String s) {
+                setInstallReferrer(s);
+            }
+        });
         Context ctx = FacebookSdk.getApplicationContext();
         SharedPreferences preferences = ctx.getSharedPreferences(
                 APP_EVENT_PREFERENCES,
@@ -559,7 +569,7 @@ class AppEventsLoggerImpl {
         }
 
         // If we have a session and the appId passed is null or matches the session's app ID:
-        if (AccessToken.isCurrentAccessTokenActive() &&
+        if ((accessToken != null && !accessToken.isExpired()) &&
                 (applicationId == null || applicationId.equals(accessToken.getApplicationId()))
                 ) {
             accessTokenAppId = new AccessTokenAppIdPair(accessToken);

@@ -28,6 +28,7 @@ import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.Signature;
 import android.os.AsyncTask;
+import android.support.annotation.Nullable;
 import android.support.annotation.RestrictTo;
 import android.util.Base64;
 import android.util.Log;
@@ -35,7 +36,6 @@ import android.util.Log;
 import com.facebook.appevents.AppEventsLogger;
 import com.facebook.appevents.AppEventsManager;
 import com.facebook.appevents.internal.ActivityLifecycleTracker;
-import com.facebook.appevents.restrictivedatafilter.RestrictiveDataManager;
 import com.facebook.core.BuildConfig;
 import com.facebook.appevents.internal.AppEventsLoggerUtility;
 import com.facebook.internal.FeatureManager;
@@ -75,7 +75,7 @@ public final class FacebookSdk {
 
     private static Executor executor;
     private static volatile String applicationId;
-    private static volatile String applicationName;
+    private static volatile @Nullable String applicationName;
     private static volatile String appClientToken;
     private static volatile Boolean codelessDebugLogEnabled;
     private static final String FACEBOOK_COM = "facebook.com";
@@ -92,7 +92,6 @@ public final class FacebookSdk {
     private static final int MAX_REQUEST_CODE_RANGE = 100;
 
     private static final String ATTRIBUTION_PREFERENCES = "com.facebook.sdk.attributionTracking";
-    private static final String APP_EVENT_PREFERENCES = "com.facebook.sdk.appEventPreferences";
     private static final String PUBLISH_ACTIVITY_PATH = "%s/activities";
 
     static final String CALLBACK_OFFSET_CHANGED_AFTER_INIT =
@@ -101,6 +100,11 @@ public final class FacebookSdk {
 
     static final String CALLBACK_OFFSET_NEGATIVE =
             "The callback request code offset can't be negative.";
+
+    /**
+     * The key for AppEvent perfernece setting.
+     */
+    public static final String APP_EVENT_PREFERENCES = "com.facebook.sdk.appEventPreferences";
 
     /**
      * The key for the application ID in the Android manifest.
@@ -846,6 +850,7 @@ public final class FacebookSdk {
      *
      * @return the application name
      */
+    @Nullable
     public static String getApplicationName() {
         Validate.sdkInitialized();
         return applicationName;

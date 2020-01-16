@@ -25,6 +25,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.support.annotation.Nullable;
 import android.text.TextUtils;
 
 import com.facebook.FacebookException;
@@ -53,6 +54,7 @@ public class AppLinkData {
      * link.
      */
     public static final String ARGUMENTS_TAPTIME_KEY = "com.facebook.platform.APPLINK_TAP_TIME_UTC";
+
     /**
      * Key that should be used to get the "referer_data" field for this app link.
      */
@@ -76,7 +78,7 @@ public class AppLinkData {
      */
     public static final String ARGUMENTS_NATIVE_URL = "com.facebook.platform.APPLINK_NATIVE_URL";
 
-    static final String BUNDLE_APPLINK_ARGS_KEY = "com.facebook.platform.APPLINK_ARGS";
+    private static final String BUNDLE_APPLINK_ARGS_KEY = "com.facebook.platform.APPLINK_ARGS";
     private static final String BUNDLE_AL_APPLINK_DATA_KEY = "al_applink_data";
     private static final String APPLINK_BRIDGE_ARGS_KEY = "bridge_args";
     private static final String APPLINK_METHOD_ARGS_KEY = "method_args";
@@ -90,6 +92,7 @@ public class AppLinkData {
     private static final String DEFERRED_APP_LINK_CLICK_TIME_FIELD = "click_time";
     private static final String DEFERRED_APP_LINK_URL_FIELD = "applink_url";
 
+    private static final String AUTO_APPLINK_FLAG_KEY = "is_auto_applink";
     private static final String METHOD_ARGS_TARGET_URL_KEY = "target_url";
     private static final String METHOD_ARGS_REF_KEY = "ref";
     private static final String REFERER_DATA_REF_KEY = "fb_ref";
@@ -97,11 +100,12 @@ public class AppLinkData {
     private static final String PROMOTION_CODE_KEY = "promo_code";
     private static final String TAG = AppLinkData.class.getCanonicalName();
 
-    private String ref;
-    private Uri targetUri;
-    private JSONObject arguments;
-    private Bundle argumentBundle;
-    private String promotionCode;
+    @Nullable private String ref;
+    @Nullable private Uri targetUri;
+    @Nullable private JSONObject arguments;
+    @Nullable private Bundle argumentBundle;
+    @Nullable private String promotionCode;
+    @Nullable private JSONObject appLinkData;
 
     /**
      * Asynchronously fetches app link information that might have been stored for use after
@@ -189,47 +193,50 @@ public class AppLinkData {
 
                 if (!TextUtils.isEmpty(appLinkArgsJsonString)) {
                     appLinkData = createFromJson(appLinkArgsJsonString);
-
-                    if (tapTimeUtc != -1) {
-                        try {
-                            if (appLinkData.arguments != null) {
-                                appLinkData.arguments.put(ARGUMENTS_TAPTIME_KEY, tapTimeUtc);
+                    if (appLinkData != null) {
+                        if (tapTimeUtc != -1) {
+                            try {
+                                if (appLinkData.arguments != null) {
+                                    appLinkData.arguments.put(ARGUMENTS_TAPTIME_KEY, tapTimeUtc);
+                                }
+                                if (appLinkData.argumentBundle != null) {
+                                    appLinkData.argumentBundle.putString(
+                                            ARGUMENTS_TAPTIME_KEY, Long.toString(tapTimeUtc));
+                                }
+                            } catch (JSONException e) {
+                                Utility.logd(TAG, "Unable to put tap time in AppLinkData.arguments");
                             }
-                            if (appLinkData.argumentBundle != null) {
-                                appLinkData.argumentBundle.putString(
-                                        ARGUMENTS_TAPTIME_KEY, Long.toString(tapTimeUtc));
-                            }
-                        } catch (JSONException e) {
-                            Utility.logd(TAG, "Unable to put tap time in AppLinkData.arguments");
                         }
-                    }
 
-                    if (appLinkClassName != null) {
-                        try {
-                            if (appLinkData.arguments != null) {
-                                appLinkData.arguments.put(
-                                        ARGUMENTS_NATIVE_CLASS_KEY, appLinkClassName);
+                        if (appLinkClassName != null) {
+                            try {
+                                if (appLinkData.arguments != null) {
+                                    appLinkData.arguments.put(
+                                            ARGUMENTS_NATIVE_CLASS_KEY, appLinkClassName);
+                                }
+                                if (appLinkData.argumentBundle != null) {
+                                    appLinkData.argumentBundle.putString(
+                                            ARGUMENTS_NATIVE_CLASS_KEY, appLinkClassName);
+                                }
+                            } catch (JSONException e) {
+                                Utility.logd(TAG,
+                                        "Unable to put app link class name in AppLinkData.arguments");
                             }
-                            if (appLinkData.argumentBundle != null) {
-                                appLinkData.argumentBundle.putString(
-                                        ARGUMENTS_NATIVE_CLASS_KEY, appLinkClassName);
-                            }
-                        } catch (JSONException e) {
-                            Utility.logd(TAG, "Unable to put tap time in AppLinkData.arguments");
                         }
-                    }
 
-                    if (appLinkUrl != null) {
-                        try {
-                            if (appLinkData.arguments != null) {
-                                appLinkData.arguments.put(ARGUMENTS_NATIVE_URL, appLinkUrl);
+                        if (appLinkUrl != null) {
+                            try {
+                                if (appLinkData.arguments != null) {
+                                    appLinkData.arguments.put(ARGUMENTS_NATIVE_URL, appLinkUrl);
+                                }
+                                if (appLinkData.argumentBundle != null) {
+                                    appLinkData.argumentBundle.putString(
+                                            ARGUMENTS_NATIVE_URL, appLinkUrl);
+                                }
+                            } catch (JSONException e) {
+                                Utility.logd(TAG,
+                                        "Unable to put app link URL in AppLinkData.arguments");
                             }
-                            if (appLinkData.argumentBundle != null) {
-                                appLinkData.argumentBundle.putString(
-                                        ARGUMENTS_NATIVE_URL, appLinkUrl);
-                            }
-                        } catch (JSONException e) {
-                            Utility.logd(TAG, "Unable to put tap time in AppLinkData.arguments");
                         }
                     }
                 }
@@ -246,6 +253,7 @@ public class AppLinkData {
      * @param activity Activity that was started because of an app link
      * @return AppLinkData if found. null if not.
      */
+    @Nullable
     public static AppLinkData createFromActivity(Activity activity) {
         Validate.notNull(activity, "activity");
         Intent intent = activity.getIntent();
@@ -271,6 +279,7 @@ public class AppLinkData {
      * @param intent Intent from the Activity that started because of an app link
      * @return AppLinkData if found. null if not.
      */
+    @Nullable
     public static AppLinkData createFromAlApplinkData(Intent intent) {
         if (intent == null) {
             return null;
@@ -283,6 +292,7 @@ public class AppLinkData {
 
         AppLinkData appLinkData = new AppLinkData();
         appLinkData.targetUri = intent.getData();
+        appLinkData.appLinkData = getAppLinkData(appLinkData.targetUri);
         if (appLinkData.targetUri == null) {
             String targetUriString = applinks.getString(METHOD_ARGS_TARGET_URL_KEY);
             if (targetUriString != null) {
@@ -314,6 +324,7 @@ public class AppLinkData {
         return appLinkData;
     }
 
+    @Nullable
     private static AppLinkData createFromJson(String jsonString) {
         if (jsonString  == null) {
             return null;
@@ -346,6 +357,7 @@ public class AppLinkData {
                 if (appLinkData.arguments.has(METHOD_ARGS_TARGET_URL_KEY)) {
                     appLinkData.targetUri = Uri.parse(
                             appLinkData.arguments.getString(METHOD_ARGS_TARGET_URL_KEY));
+                    appLinkData.appLinkData = getAppLinkData(appLinkData.targetUri);
                 }
 
                 if (appLinkData.arguments.has(ARGUMENTS_EXTRAS_KEY)) {
@@ -374,6 +386,7 @@ public class AppLinkData {
         return null;
     }
 
+    @Nullable
     private static AppLinkData createFromUri(Uri appLinkDataUri) {
         if (appLinkDataUri == null) {
             return null;
@@ -381,6 +394,7 @@ public class AppLinkData {
 
         AppLinkData appLinkData = new AppLinkData();
         appLinkData.targetUri = appLinkDataUri;
+        appLinkData.appLinkData = getAppLinkData(appLinkData.targetUri);
         return appLinkData;
     }
 
@@ -424,14 +438,44 @@ public class AppLinkData {
         return bundle;
     }
 
+    @Nullable
+    private static JSONObject getAppLinkData(@Nullable Uri uri) {
+        if (uri == null) {
+            return null;
+        }
+
+        String data = uri.getQueryParameter(BUNDLE_AL_APPLINK_DATA_KEY);
+        if (data == null) {
+            return null;
+        }
+        try {
+            return new JSONObject(data);
+        } catch (JSONException e) {
+            /* no op */
+        }
+        return null;
+    }
 
     private AppLinkData() {
+    }
+
+    public boolean isAutoAppLink() {
+        if (null == targetUri) {
+            return false;
+        }
+        String host = targetUri.getHost();
+        String scheme = targetUri.getScheme();
+        String expectedHost = "applinks";
+        String expectedScheme = String.format("fb%s", FacebookSdk.getApplicationId());
+        boolean autoFlag = appLinkData != null && appLinkData.optBoolean(AUTO_APPLINK_FLAG_KEY);
+        return autoFlag && expectedHost.equals(host) && expectedScheme.equals(scheme);
     }
 
     /**
      * Returns the target uri for this App Link.
      * @return target uri
      */
+    @Nullable
     public Uri getTargetUri() {
         return targetUri;
     }
@@ -440,6 +484,7 @@ public class AppLinkData {
      * Returns the ref for this App Link.
      * @return ref
      */
+    @Nullable
     public String getRef() {
         return ref;
     }
@@ -448,6 +493,7 @@ public class AppLinkData {
      * Returns the promotion code for this App Link.
      * @return promotion code
      */
+    @Nullable
     public String getPromotionCode() {
         return promotionCode;
     }
@@ -457,6 +503,7 @@ public class AppLinkData {
      * picked out of this set of arguments.
      * @return App link related arguments as a bundle.
      */
+    @Nullable
     public Bundle getArgumentBundle() {
         return argumentBundle;
     }
@@ -467,11 +514,22 @@ public class AppLinkData {
      *
      * @return the referer data.
      */
+    @Nullable
     public Bundle getRefererData() {
         if (argumentBundle != null) {
             return argumentBundle.getBundle(ARGUMENTS_REFERER_DATA_KEY);
         }
         return null;
+    }
+
+    /**
+     * Returns the data of al_applink_data which is defined in
+     * https://developers.facebook.com/docs/applinks/navigation-protocol
+     *
+     * @return App Link data. Empty if not found.
+     */
+    public JSONObject getAppLinkData() {
+        return appLinkData != null ? appLinkData : new JSONObject();
     }
 
     /**
@@ -484,6 +542,6 @@ public class AppLinkData {
          *
          * @param appLinkData The app link data that was fetched. Null if none was found.
          */
-        void onDeferredAppLinkDataFetched(AppLinkData appLinkData);
+        void onDeferredAppLinkDataFetched(@Nullable AppLinkData appLinkData);
     }
 }

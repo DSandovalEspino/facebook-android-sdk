@@ -21,8 +21,11 @@
 package com.facebook.internal;
 
 import android.content.Context;
+import android.content.Intent;
+import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
@@ -478,6 +481,18 @@ public final class Utility {
         return map;
     }
 
+    public static List<String> convertJSONArrayToList(JSONArray jsonArray) {
+        try {
+            List<String> result = new ArrayList<>();
+            for (int i = 0; i < jsonArray.length(); i++) {
+                result.add(jsonArray.getString(i));
+            }
+            return result;
+        } catch (JSONException je) {
+            return new ArrayList<>();
+        }
+    }
+
     // Returns either a JSONObject or JSONArray representation of the 'key' property of
     // 'jsonObject'.
     public static Object getStringPropertyAsJSON(
@@ -706,6 +721,39 @@ public final class Utility {
         }
 
         return result;
+    }
+
+    public static String mapToJsonStr(Map<String, String> map) {
+        if (map.isEmpty()) {
+            return "";
+        }
+        try {
+            JSONObject jsonObject = new JSONObject();
+            for (Map.Entry<String, String> entry : map.entrySet()) {
+                jsonObject.put(entry.getKey(), entry.getValue());
+            }
+            return jsonObject.toString();
+        } catch (JSONException _e) {
+            return "";
+        }
+    }
+
+    public static Map<String, String> JsonStrToMap(String str) {
+        if (str.isEmpty()) {
+            return new HashMap<>();
+        }
+        try {
+            Map<String, String> map = new HashMap<>();
+            JSONObject jsonObject = new JSONObject(str);
+            Iterator<String> keys = jsonObject.keys();
+            while (keys.hasNext()) {
+                String key = keys.next();
+                map.put(key, jsonObject.getString(key));
+            }
+            return map;
+        } catch (JSONException _e) {
+            return new HashMap<>();
+        }
     }
 
     public static void setAppEventAttributionParameters(
@@ -1310,14 +1358,61 @@ public final class Utility {
          return isChromeOS;
      }
 
-     public static Locale getCurrentLocale() {
-         Locale locale;
-         try {
-             locale = FacebookSdk.getApplicationContext().getResources().getConfiguration().locale;
-         } catch (Exception e) {
-             locale = Locale.getDefault();
-         }
+    @Nullable
+    public static Locale getResourceLocale() {
+        try {
+            return FacebookSdk.getApplicationContext().getResources().getConfiguration().locale;
+        } catch (Exception e) {
+            return null;
+        }
+    }
 
-         return locale;
+    public static Locale getCurrentLocale() {
+        Locale locale = getResourceLocale();
+        return locale != null ? locale : Locale.getDefault();
+    }
+
+     public static void runOnNonUiThread(Runnable runnable) {
+         try {
+             FacebookSdk.getExecutor().execute(runnable);
+         } catch (Exception e) {
+             /*no op*/
+         }
+     }
+
+     public static String getAppName(Context context) {
+         try {
+             String applicationName = FacebookSdk.getApplicationName();
+             if (applicationName != null) {
+                 return applicationName;
+             }
+             ApplicationInfo applicationInfo = context.getApplicationInfo();
+             int stringId = applicationInfo.labelRes;
+             return stringId == 0 ?
+                     applicationInfo.nonLocalizedLabel.toString()
+                     : context.getString(stringId);
+         } catch (Exception e) {
+             return "";
+         }
+     }
+
+     public static boolean isAutoAppLinkSetup() {
+         try {
+             Intent intent = new Intent(Intent.ACTION_VIEW);
+             intent.setData(Uri.parse(String.format("fb%s://applinks", FacebookSdk.getApplicationId())));
+             Context ctx = FacebookSdk.getApplicationContext();
+             PackageManager packageManager = ctx.getPackageManager();
+             String packageName = ctx.getPackageName();
+             List<ResolveInfo> activities = packageManager.queryIntentActivities(intent,
+                     PackageManager.MATCH_DEFAULT_ONLY);
+             for (ResolveInfo info : activities) {
+                 if (packageName.equals(info.activityInfo.packageName)) {
+                     return true;
+                 }
+             }
+         } catch (Exception e) {
+             /* no op */
+         }
+         return false;
      }
 }

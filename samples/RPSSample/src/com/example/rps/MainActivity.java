@@ -23,16 +23,17 @@ package com.example.rps;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.support.design.widget.BottomNavigationView;
 import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
+import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 
-import bolts.AppLinks;
 import com.facebook.*;
+import com.facebook.applinks.AppLinkData;
 import com.facebook.AccessToken;
 import com.facebook.FacebookException;
 import com.facebook.FacebookSdk;
@@ -44,14 +45,15 @@ import org.json.JSONException;
 
 import static com.example.rps.RpsGameUtils.INVALID_CHOICE;
 
-public class MainActivity extends FragmentActivity {
+public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity";
     private static final String INAPP_PURCHASE_DATA = "INAPP_PURCHASE_DATA";
 
     static final int RPS = 0;
     static final int SETTINGS = 1;
     static final int CONTENT = 2;
-    static final int FRAGMENT_COUNT = CONTENT +1;
+    static final int AUTOAPPLINK = 3;
+    static final int FRAGMENT_COUNT = 4;
 
     private Fragment[] fragments = new Fragment[FRAGMENT_COUNT];
     private MenuItem settings;
@@ -85,10 +87,28 @@ public class MainActivity extends FragmentActivity {
 
         setContentView(R.layout.main);
 
+        // Navigation bottom view
+        BottomNavigationView bottomNav = findViewById(R.id.bottom_navigation);
+        bottomNav.setOnNavigationItemSelectedListener(
+                new BottomNavigationView.OnNavigationItemSelectedListener() {
+                    @Override
+                    public boolean onNavigationItemSelected(MenuItem item) {
+
+                        if (item.getItemId() == R.id.nav_game) {
+                            showFragment(RPS, false);
+                        } else if (item.getItemId() == R.id.nav_auto_applink_debug_tool) {
+                            showFragment(AUTOAPPLINK, false);
+                        }
+
+                        return true;
+                    }
+                });
+
         FragmentManager fm = getSupportFragmentManager();
         fragments[RPS] = fm.findFragmentById(R.id.rps_fragment);
         fragments[SETTINGS] = fm.findFragmentById(R.id.settings_fragment);
         fragments[CONTENT] = fm.findFragmentById(R.id.content_fragment);
+        fragments[AUTOAPPLINK] = fm.findFragmentById(R.id.auto_applink_fragment);
 
         FragmentTransaction transaction = fm.beginTransaction();
         for(int i = 0; i < fragments.length; i++) {
@@ -96,6 +116,13 @@ public class MainActivity extends FragmentActivity {
         }
         transaction.commit();
 
+        AppLinkData appLinkData = AppLinkData.createFromActivity(this);
+        if (appLinkData != null && appLinkData.isAutoAppLink()) {
+            String productId = appLinkData.getAppLinkData().optString("product_id", "");
+            navigateToProductDetails(productId);
+        }
+
+        // We handle with other deep links
         hasNativeLink = handleNativeLink();
 
         gameRequestDialog = new GameRequestDialog(this);
@@ -123,6 +150,12 @@ public class MainActivity extends FragmentActivity {
                         }
                     }
                 });
+    }
+
+    private void navigateToProductDetails(String productId) {
+        Intent intent = new Intent(this, AutoApplinkDemoActivity.class);
+        intent.putExtra("product_id", productId);
+        startActivity(intent);
     }
 
     @Override
@@ -241,21 +274,30 @@ public class MainActivity extends FragmentActivity {
     }
 
     private int getAppLinkGesture(Intent intent) {
-      Uri targetURI = AppLinks.getTargetUrlFromInboundIntent(this, intent);
-      if (targetURI == null) {
+        Uri targetURI = null;
+
+        Bundle appLinkData = intent.getBundleExtra("al_applink_data");
+        if (appLinkData != null) {
+            String targetString = appLinkData.getString("target_url");
+            if (targetString != null) {
+                targetURI = Uri.parse(targetString);
+            }
+        }
+
+        if (targetURI == null) {
+            return INVALID_CHOICE;
+        }
+        String gesture = targetURI.getQueryParameter("gesture");
+        if (gesture != null) {
+            if (gesture.equalsIgnoreCase(getString(R.string.rock))) {
+                return RpsGameUtils.ROCK;
+            } else if (gesture.equalsIgnoreCase(getString(R.string.paper))) {
+                return RpsGameUtils.PAPER;
+            } else if (gesture.equalsIgnoreCase(getString(R.string.scissors))) {
+                return RpsGameUtils.SCISSORS;
+            }
+        }
         return INVALID_CHOICE;
-      }
-      String gesture = targetURI.getQueryParameter("gesture");
-      if (gesture != null) {
-          if (gesture.equalsIgnoreCase(getString(R.string.rock))) {
-              return RpsGameUtils.ROCK;
-          } else if (gesture.equalsIgnoreCase(getString(R.string.paper))) {
-              return RpsGameUtils.PAPER;
-          } else if (gesture.equalsIgnoreCase(getString(R.string.scissors))) {
-              return RpsGameUtils.SCISSORS;
-          }
-      }
-      return INVALID_CHOICE;
     }
 
     void showFragment(int fragmentIndex, boolean addToBackStack) {

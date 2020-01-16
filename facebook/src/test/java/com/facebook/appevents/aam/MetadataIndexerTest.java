@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2014-present, Facebook, Inc. All rights reserved.
  *
  * You are hereby granted a non-exclusive, worldwide, royalty-free license to use,
@@ -18,21 +18,15 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.facebook;
+package com.facebook.appevents.aam;
 
-import android.content.BroadcastReceiver;
-import android.content.Context;
-import android.content.Intent;
+import com.facebook.FacebookPowerMockTestCase;
 
-import com.facebook.appevents.AppEventsLogger;
+import org.junit.Test;
 
-public final class CampaignTrackingReceiver extends BroadcastReceiver {
-    static final String INSTALL_REFERRER = "referrer";
-    @Override
-    public void onReceive(Context context, Intent intent) {
-        String referrer = intent.getStringExtra(INSTALL_REFERRER);
-        if (referrer != null && referrer.startsWith("fb")) {
-            AppEventsLogger.setInstallReferrer(intent.getStringExtra(INSTALL_REFERRER));
-        }
+public class MetadataIndexerTest extends FacebookPowerMockTestCase {
+    @Test
+    public void testOnActivityResumed() throws Exception {
+
     }
 }

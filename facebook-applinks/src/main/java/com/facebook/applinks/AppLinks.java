@@ -20,4 +20,8 @@
 
 package com.facebook.applinks;
 
-public class AppLinks { }
+public final class AppLinks {
+
+    private AppLinks() {}
+
+}

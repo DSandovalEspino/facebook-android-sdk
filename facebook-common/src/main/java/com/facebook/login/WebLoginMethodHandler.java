@@ -99,6 +99,13 @@ abstract class WebLoginMethodHandler extends LoginMethodHandler {
                     AppEventsConstants.EVENT_PARAM_VALUE_NO);
         }
 
+        parameters.putString(
+                ServerProtocol.DIALOG_PARAM_CBT,
+                String.valueOf(System.currentTimeMillis()));
+        parameters.putString(
+                ServerProtocol.DIALOG_PARAM_IES,
+                FacebookSdk.getAutoLogAppEventsEnabled() ? "1" : "0");
+
         return parameters;
     }
 
@@ -115,6 +122,9 @@ abstract class WebLoginMethodHandler extends LoginMethodHandler {
         parameters.putString(
                 ServerProtocol.DIALOG_PARAM_AUTH_TYPE,
                 request.getAuthType());
+        parameters.putString(
+                ServerProtocol.DIALOG_PARAM_SDK_VERSION,
+                String.format(Locale.ROOT, "android-%s", FacebookSdk.getSdkVersion()));
         if (getSSODevice() != null) {
             parameters.putString(ServerProtocol.DIALOG_PARAM_SSO_DEVICE, getSSODevice());
         }

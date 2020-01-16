@@ -71,7 +71,6 @@ final class UserSettingsManager {
     private static final String USER_SETTINGS = "com.facebook.sdk.USER_SETTINGS";
     private static final String USER_SETTINGS_BITMASK = "com.facebook.sdk.USER_SETTINGS_BITMASK";
     private static SharedPreferences userSettingPref;
-    private static SharedPreferences.Editor userSettingPrefEditor;
 
     // Parameter names of settings in cache
     private static final String LAST_TIMESTAMP = "last_timestamp";
@@ -94,6 +93,9 @@ final class UserSettingsManager {
             "The value for AdvertiserIDCollectionEnabled is currently set to FALSE so you're " +
             "sending app events without collecting Advertiser ID. This can affect the quality " +
             "of your advertising and analytics results.";
+    // Warning message for Auto App Link Setting
+    private static final String AUTO_APP_LINK_WARNING =
+            "You haven't set the Auto App Link URL scheme: fb<YOUR APP ID> in AndroidManifest";
 
     public static void initializeIfNotInitialized() {
         if (!FacebookSdk.isInitialized()) {
@@ -106,12 +108,12 @@ final class UserSettingsManager {
 
         userSettingPref = FacebookSdk.getApplicationContext()
                 .getSharedPreferences(USER_SETTINGS, Context.MODE_PRIVATE);
-        userSettingPrefEditor = userSettingPref.edit();
 
         initializeUserSetting(autoLogAppEventsEnabled, advertiserIDCollectionEnabled, autoInitEnabled);
         initializeCodelessSetupEnabledAsync();
         logWarnings();
         logIfSDKSettingsChanged();
+        logIfAutoAppLinkEnabled();
     }
 
     private static void initializeUserSetting(UserSetting... userSettings) {
@@ -193,12 +195,12 @@ final class UserSettingsManager {
             JSONObject jsonObject = new JSONObject();
             jsonObject.put(VALUE, userSetting.value);
             jsonObject.put(LAST_TIMESTAMP, userSetting.lastTS);
-            userSettingPrefEditor
+            userSettingPref.edit()
                     .putString(userSetting.key, jsonObject.toString())
                     .commit();
             logIfSDKSettingsChanged();
-        } catch (JSONException je) {
-            Utility.logd(TAG, je);
+        } catch (Exception e) {
+            Utility.logd(TAG, e);
         }
     }
 
@@ -275,7 +277,7 @@ final class UserSettingsManager {
 
         int previousBitmask = userSettingPref.getInt(USER_SETTINGS_BITMASK, 0);
         if (previousBitmask != bitmask) {
-            userSettingPrefEditor.putInt(USER_SETTINGS_BITMASK, bitmask).commit();
+            userSettingPref.edit().putInt(USER_SETTINGS_BITMASK, bitmask).commit();
             int initialBitmask = 0;
             int usageBitmask = 0;
             try {
@@ -306,6 +308,24 @@ final class UserSettingsManager {
             parameters.putInt("current", bitmask);
             logger.logEventImplicitly("fb_sdk_settings_changed", parameters);
         }
+    }
+
+    private static void logIfAutoAppLinkEnabled() {
+        try {
+            final Context ctx = FacebookSdk.getApplicationContext();
+            ApplicationInfo ai = ctx.getPackageManager().getApplicationInfo(
+                            ctx.getPackageName(), PackageManager.GET_META_DATA);
+            if (ai != null && ai.metaData != null
+                    && ai.metaData.getBoolean("com.facebook.sdk.AutoAppLinkEnabled", false)) {
+                InternalAppEventsLogger logger = new InternalAppEventsLogger(ctx);
+                Bundle params = new Bundle();
+                if (!Utility.isAutoAppLinkSetup()) {
+                    params.putString("SchemeWarning", AUTO_APP_LINK_WARNING);
+                    Log.w(TAG, AUTO_APP_LINK_WARNING);
+                }
+                logger.logEvent("fb_auto_applink", params);
+            }
+        } catch (PackageManager.NameNotFoundException e) { /* no op */}
     }
 
     /**

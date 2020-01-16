@@ -24,7 +24,8 @@ dependencies {
     // Facebook Dependencies
     implementation project(':facebook-login')
     implementation project(':facebook-share')
-    implementation 'com.parse.bolts:bolts-android:1.4.0'
+    implementation project(':facebook-applinks')
+    implementation 'com.android.support:design:27.1.1'
 }
 
 android {
@@ -56,6 +57,12 @@ android {
             reset()
             include 'armeabi', 'armeabi-v7a', 'x86'
             universalApk true
+        }
+    }
+
+    buildTypes {
+        release {
+            proguardFiles 'proguard-project.txt'
         }
     }
 }
